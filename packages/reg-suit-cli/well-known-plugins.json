@@ -14,6 +14,13 @@
     }
   },
   {
+    "name": "reg-publish-local-plugin",
+    "description": "Fetch and publish snapshot images to AWS S3.",
+    "metadata": {
+      "recommended": true
+    }
+  },
+  {
     "name": "reg-publish-s3-plugin",
     "description": "Fetch and publish snapshot images to AWS S3.",
     "metadata": {

@@ -1,0 +1,43 @@
+{
+  "name": "reg-publish-local-plugin",
+  "version": "0.6.1",
+  "description": "Fetch and publish snapshot images to AWS S3.",
+  "regSuitPlugin": {
+    "recommended": true
+  },
+  "main": "lib/index.js",
+  "scripts": {
+    "prepublish": "tsc -p src/tsconfig.build.json",
+    "clean:e2e": "rimraf e2e/report-fixture-expected",
+    "test": "npm run clean:e2e && tsc -p e2e/tsconfig.json && node built_e2e/script.js"
+  },
+  "keywords": [
+    "reg",
+    "reg-suit-plugin"
+  ],
+  "author": {
+    "name": "Quramy",
+    "email": "yosuke.kurami@gmail.com"
+  },
+  "repository": "git+https://github.com/reg-viz/reg-suit.git",
+  "license": "MIT",
+  "dependencies": {
+    "aws-sdk": "^2.77.0",
+    "glob": "^7.1.2",
+    "lodash": "^4.17.4",
+    "mime-types": "^2.1.15",
+    "mkdirp": "^0.5.1",
+    "uuid": "^3.1.0"
+  },
+  "devDependencies": {
+    "@types/glob": "^5.0.30",
+    "@types/lodash": "^4.14.66",
+    "@types/mime-types": "^2.1.0",
+    "@types/mkdirp": "^0.3.29",
+    "@types/uuid": "^3.0.0",
+    "reg-suit-interface": "^0.6.0",
+    "reg-suit-util": "^0.6.0",
+    "rimraf": "^2.6.1",
+    "typescript": "~2.5.2"
+  }
+}
