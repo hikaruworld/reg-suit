@@ -9,7 +9,7 @@ import { PluginPreparer,
 import { PluginConfig } from "./local-publisher-plugin";
 
 export interface SetupInquireResult {
-  createBucket: boolean;
+  createDirectory: boolean;
   directoryPath?: string;
 }
 
@@ -21,7 +21,7 @@ export class LocalBucketPreparer implements PluginPreparer<SetupInquireResult, P
   inquire() {
     return [
       {
-        name: "createBucket",
+        name: "createDirectory",
         type: "confirm",
         message: "Create a new Directory",
         default: true,
@@ -30,7 +30,7 @@ export class LocalBucketPreparer implements PluginPreparer<SetupInquireResult, P
         name: "directoryPath",
         type: "input",
         message: "Existing bucket name",
-        when: (ctx: { createBucket: boolean }) => !ctx.createBucket,
+        when: (ctx: { createDirectory: boolean }) => !ctx.createDirectory,
       },
     ];
   }
@@ -44,7 +44,7 @@ export class LocalBucketPreparer implements PluginPreparer<SetupInquireResult, P
       return Promise.resolve({ directoryPath });
     }
     this._logger.info(`Create new directory: ${this._logger.colors.magenta(directoryPath)}`);
-    const spinner = this._logger.getSpinner(`creating bucket...`);
+    const spinner = this._logger.getSpinner(`creating directory...`);
     spinner.start();
     return this._createDirectory(directoryPath)
       .then(directoryPath => {

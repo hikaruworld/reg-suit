@@ -32,7 +32,7 @@ const dirsB = {
 };
 
 let bn: string;
-preparer.prepare({ ...baseConf, options: { createBucket: true, directoryPath: "/tmp/bucket-test" }, workingDirs: dirsA })
+preparer.prepare({ ...baseConf, options: { createDirectory: true, directoryPath: "/tmp/bucket-test" }, workingDirs: dirsA })
 .then(({ directoryPath }) => {
   bn = directoryPath || "";
   plugin.init({
