@@ -110,11 +110,10 @@ export class S3PublisherPlugin implements PublisherPlugin<PluginConfig> {
       });
     })
     .then((files) => {
-      files.map((file) => {
-console.log("--------------", file.absPath, `${actualPath}/${path.basename(file.path)}`);
+      return Promise.all(files.map((file) => {
         fs.copySync(`${actualPath}/${path.basename(file.path)}`, file.absPath);
         progress.increment(1);
-      })
+      }));
     })
     ;
   }
@@ -165,7 +164,6 @@ console.log("--------------", file.absPath, `${actualPath}/${path.basename(file.
     return new Promise((resolve, reject) => {
       fs.readFile(item.absPath, (err, content) => {
         if (err) return reject(err);
-        console.log(item.absPath, "=>", actualPath, path.basename(item.path))
         fs.copySync(item.absPath, `${actualPath}/${path.basename(item.path)}`);
         return resolve(item)
       });
