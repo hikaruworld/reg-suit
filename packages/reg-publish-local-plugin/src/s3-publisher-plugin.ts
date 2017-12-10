@@ -1,7 +1,6 @@
-import * as fs from "fs";
+import * as fs from "fs-extra";
 import * as path from "path";
 import * as zlib from "zlib";
-import { S3, config as awsConfig } from "aws-sdk";
 import * as glob from "glob";
 import * as _ from "lodash";
 import * as mkdirp from "mkdirp";
@@ -14,7 +13,6 @@ import { PublisherPlugin,
 export interface PluginConfig {
   bucketName: string;
   pattern?: string;
-  acl?: string;
 }
 
 interface PluginConfigInternal extends PluginConfig {
@@ -38,7 +36,6 @@ export class S3PublisherPlugin implements PublisherPlugin<PluginConfig> {
   private _logger: PluginLogger;
   private _options: PluginCreateOptions<any>;
   private _pluginConfig: PluginConfigInternal;
-  private _s3client: S3;
 
   constructor() {
   }
@@ -49,10 +46,8 @@ export class S3PublisherPlugin implements PublisherPlugin<PluginConfig> {
       pattern: DEFAULT_PATTERN,
       ...config.options,
     };
-    this._s3client = new S3();
     this._noEmit = config.noEmit;
     this._logger = config.logger;
-    this._checkCredentials();
   }
 
   createList(): Promise<FileItem[]> {
@@ -90,27 +85,23 @@ export class S3PublisherPlugin implements PublisherPlugin<PluginConfig> {
   fetch(key: string): Promise<any> {
     if (this._noEmit) return Promise.resolve();
     const actualPrefix = `${key}/${path.basename(this._options.workingDirs.actualDir)}`;
+    const actualPath = path.join(this._pluginConfig.bucketName, actualPrefix);
+    fs.mkdirsSync(actualPath);
     const progress = this._logger.getProgressBar();
-    return new Promise<S3.ListObjectsOutput>((resolve, reject) => {
-      this._s3client.listObjects({
-        Bucket: this._pluginConfig.bucketName,
-        Prefix: actualPrefix,
-        MaxKeys: 3000,
-      }, (err, x) => {
+    return new Promise<string[]>((resolve, reject) => {
+      fs.readdir(actualPath, (err, files) => {
         if (err) {
-          return reject(err);
+            return reject(err);
         }
-        resolve(x);
+        resolve(files);
       });
     })
-    .then(result => result.Contents || [])
-    .then(contents => {
-      if (contents.length) {
-        progress.start(contents.length, 0);
-        this._logger.info(`Download ${contents.length} files from ${this._logger.colors.magenta(this._pluginConfig.bucketName)}.`);
+    .then((files) => {
+      if (files.length) {
+        progress.start(files.length, 0);
       }
-      return contents.map(c => {
-        const suffix = c.Key ? c.Key.replace(new RegExp(`^${actualPrefix}\/`), "") : "";
+      return files.map(file => {
+        const suffix = file.replace(new RegExp(`^${actualPath}\/`), "");
         return {
           path: suffix,
           absPath: path.join(this._options.workingDirs.expectedDir, suffix),
@@ -118,21 +109,12 @@ export class S3PublisherPlugin implements PublisherPlugin<PluginConfig> {
         } as FileItem;
       });
     })
-    .then(items => _.chunk(items, CONCURRENCY_SIZE))
-    .then(chunks => {
-      return chunks.reduce((acc, chunk) => {
-        return acc.then(list => {
-          return Promise.all(chunk.map(item => {
-            return this._fetchItem(key, item).then(fi => {
-              progress.increment(1);
-              return fi;
-            });
-          })).then(items => [...list, ...items]);
-        });
-      }, Promise.resolve([] as FileItem[]));
-    }).then(result => {
-      progress.stop();
-      return result;
+    .then((files) => {
+      files.map((file) => {
+console.log("--------------", file.absPath, `${actualPath}/${path.basename(file.path)}`);
+        fs.copySync(`${actualPath}/${path.basename(file.path)}`, file.absPath);
+        progress.increment(1);
+      })
     })
     ;
   }
@@ -166,78 +148,28 @@ export class S3PublisherPlugin implements PublisherPlugin<PluginConfig> {
       })
       .then(items => {
         const indexFile = items.find(item => item.path.endsWith("index.html"));
-        const reportUrl = indexFile && `https://${this._pluginConfig.bucketName}.s3.amazonaws.com/${key}/${indexFile.path}`;
+        const reportUrl = indexFile && path.join(this._pluginConfig.bucketName, key, indexFile.path);
         return { reportUrl, items };
       })
       .then(result => {
         progress.stop();
         return result;
       })
-    ;
+      ;
   }
 
-  private _checkCredentials() {
-    if (!awsConfig.credentials || !awsConfig.credentials.accessKeyId || !awsConfig.credentials.secretAccessKey) {
-      this._logger.error("Failed to read AWS credentials.");
-      this._logger.error(`Create ${this._logger.colors.magenta("~/.aws/credentials")} or export ${this._logger.colors.green("$AWS_ACCESS_KEY_ID")} and ${this._logger.colors.green("$AWS_SECRET_ACCESS_KEY")}.`);
-      throw new Error("AWS credentials are not set.");
-    }
-  }
-
-  private _publishItem(key: string, item: FileItem): Promise<FileItem> {
+  _publishItem(key: string, item: FileItem): Promise<FileItem> {
+    const actualPrefix = `${key}/${path.basename(this._options.workingDirs.actualDir)}`;
+    const actualPath = path.join(this._pluginConfig.bucketName, actualPrefix);
+    fs.mkdirsSync(actualPath);
     return new Promise((resolve, reject) => {
       fs.readFile(item.absPath, (err, content) => {
         if (err) return reject(err);
-        zlib.gzip(content, (err, data) => {
-          if (err) return reject(err);
-          this._s3client.putObject({
-            Bucket: this._pluginConfig.bucketName,
-            Key: `${key}/${item.path}`,
-            Body: data,
-            ContentType: item.mimeType,
-            ContentEncoding: "gzip",
-            ACL: this._pluginConfig.acl || "public-read",
-          }, (err, x) => {
-            if (err) return reject(err);
-            this._logger.verbose(`Uploaded from ${item.absPath} to ${key}/${item.path}`,);
-            return resolve(item);
-          });
-        });
+        console.log(item.absPath, "=>", actualPath, path.basename(item.path))
+        fs.copySync(item.absPath, `${actualPath}/${path.basename(item.path)}`);
+        return resolve(item)
       });
     });
   }
 
-  private _fetchItem(key: string, item: FileItem): Promise<FileItem> {
-    const s3Key = `${key}/${path.basename(this._options.workingDirs.actualDir)}/${item.path}`;
-    return new Promise((resolve, reject) => {
-      this._s3client.getObject({
-        Bucket: this._pluginConfig.bucketName,
-        Key: `${s3Key}`,
-      }, (err, x) => {
-        if (err) {
-          return reject(err);
-        }
-        mkdirp.sync(path.dirname(item.absPath));
-        this._gunzipIfNeed(x, (err, content) => {
-          fs.writeFile(item.absPath, content, (err) => {
-            if (err) {
-              return reject(err);
-            }
-            this._logger.verbose(`Downloaded from ${s3Key} to ${item.absPath}`);
-            resolve(item);
-          });
-        });
-      });
-    });
-  }
-
-  private _gunzipIfNeed(output: S3.GetObjectOutput, cb: (err: any, data: Buffer) => any) {
-    if (output.ContentEncoding === "gzip") {
-      zlib.gunzip(output.Body as Buffer, (err, content) => {
-        cb(err, content);
-      });
-    } else {
-      cb(null, output.Body as Buffer);
-    }
-  }
 }

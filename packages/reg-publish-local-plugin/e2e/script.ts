@@ -4,7 +4,6 @@ import { S3PublisherPlugin } from "../lib/s3-publisher-plugin";
 import { S3BucketPreparer } from "../lib/s3-bucket-preparer";
 import * as glob from "glob";
 import * as assert from "assert";
-import { S3 } from "aws-sdk";
 
 const preparer = new S3BucketPreparer();
 
@@ -32,7 +31,7 @@ const dirsB = {
 };
 
 let bn: string;
-preparer.prepare({ ...baseConf, options: { createBucket: true, }, workingDirs: dirsA })
+preparer.prepare({ ...baseConf, options: { createBucket: true, bucketName: "/tmp/bucket-test" }, workingDirs: dirsA })
 .then(({ bucketName }) => {
   bn = bucketName || "";
   plugin.init({
@@ -55,30 +54,31 @@ preparer.prepare({ ...baseConf, options: { createBucket: true, }, workingDirs: d
   return plugin.fetch("abcdef12345");
 })
 .then(() => {
+console.log("##############", dirsB);
   const list = glob.sync("dir_b/sample01.png", { cwd: dirsB.base });
   assert.equal(list[0], "dir_b/sample01.png");
 })
 .then(() => {
-  return new Promise(resolve => {
-    new S3().listObjects({
-      Bucket: bn,
-    }, (err, result) => {
-      if (result.Contents) {
-        new S3().deleteObjects({
-          Bucket: bn,
-          Delete: { Objects: result.Contents.map(c => ({ Key: c.Key as any })) },
-        }, (err2, x) => resolve(x));
-      }
-    });
-  });
+  // return new Promise(resolve => {
+  //   new S3().listObjects({
+  //     Bucket: bn,
+  //   }, (err, result) => {
+  //     if (result.Contents) {
+  //       new S3().deleteObjects({
+  //         Bucket: bn,
+  //         Delete: { Objects: result.Contents.map(c => ({ Key: c.Key as any })) },
+  //       }, (err2, x) => resolve(x));
+  //     }
+  //   });
+  // });
 })
 .then(() => {
-  new S3().deleteBucket({
-    Bucket: bn,
-  }, () => {
-    console.log(" 🌟  Test was ended successfully! 🌟 ");
-    process.exit(0);
-  });
+  // new S3().deleteBucket({
+  //   Bucket: bn,
+  // }, () => {
+  //   console.log(" 🌟  Test was ended successfully! 🌟 ");
+  //   process.exit(0);
+  // });
 })
 .catch(err => {
   console.error(err);

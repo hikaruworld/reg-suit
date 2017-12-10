@@ -1,7 +1,7 @@
 {
   "name": "reg-publish-local-plugin",
   "version": "0.6.1",
-  "description": "Fetch and publish snapshot images to AWS S3.",
+  "description": "Fetch and publish snapshot images to file system",
   "regSuitPlugin": {
     "recommended": true
   },
@@ -22,15 +22,16 @@
   "repository": "git+https://github.com/reg-viz/reg-suit.git",
   "license": "MIT",
   "dependencies": {
-    "aws-sdk": "^2.77.0",
     "glob": "^7.1.2",
     "lodash": "^4.17.4",
     "mime-types": "^2.1.15",
     "mkdirp": "^0.5.1",
-    "uuid": "^3.1.0"
+    "uuid": "^3.1.0",
+    "fs-extra": "4.0.2"
   },
   "devDependencies": {
     "@types/glob": "^5.0.30",
+    "@types/fs-extra": "^4.0.5",
     "@types/lodash": "^4.14.66",
     "@types/mime-types": "^2.1.0",
     "@types/mkdirp": "^0.3.29",
