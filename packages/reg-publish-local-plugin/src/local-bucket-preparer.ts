@@ -6,7 +6,7 @@ import { PluginPreparer,
   PreparerQuestions,
   PluginLogger
 } from "reg-suit-interface";
-import { PluginConfig } from "./s3-publisher-plugin";
+import { PluginConfig } from "./local-publisher-plugin";
 
 export interface SetupInquireResult {
   createBucket: boolean;
@@ -15,7 +15,7 @@ export interface SetupInquireResult {
 
 const BUCKET_PREFIX = "reg-publish-local";
 
-export class S3BucketPreparer implements PluginPreparer<SetupInquireResult, PluginConfig> {
+export class LocalBucketPreparer implements PluginPreparer<SetupInquireResult, PluginConfig> {
   _logger: PluginLogger;
 
   inquire() {
@@ -23,7 +23,7 @@ export class S3BucketPreparer implements PluginPreparer<SetupInquireResult, Plug
       {
         name: "createBucket",
         type: "confirm",
-        message: "Create a new S3 bucket",
+        message: "Create a new Directory",
         default: true,
       },
       {

@@ -1,14 +1,14 @@
 /* tslint:disable:no-console */
 import * as fs from "fs-extra";
 import { createLogger } from "reg-suit-util";
-import { S3PublisherPlugin } from "../lib/s3-publisher-plugin";
-import { S3BucketPreparer } from "../lib/s3-bucket-preparer";
+import { LocalPublisherPlugin } from "../lib/local-publisher-plugin";
+import { LocalBucketPreparer } from "../lib/local-bucket-preparer";
 import * as glob from "glob";
 import * as assert from "assert";
 
-const preparer = new S3BucketPreparer();
+const preparer = new LocalBucketPreparer();
 
-const plugin = new S3PublisherPlugin();
+const plugin = new LocalPublisherPlugin();
 const logger = createLogger();
 logger.setLevel("verbose");
 const baseConf = {
