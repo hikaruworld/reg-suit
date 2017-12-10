@@ -10,7 +10,7 @@ import { PluginConfig } from "./s3-publisher-plugin";
 
 export interface SetupInquireResult {
   createBucket: boolean;
-  bucketName?: string;
+  directoryPath?: string;
 }
 
 const BUCKET_PREFIX = "reg-publish-local";
@@ -27,7 +27,7 @@ export class S3BucketPreparer implements PluginPreparer<SetupInquireResult, Plug
         default: true,
       },
       {
-        name: "bucketName",
+        name: "directoryPath",
         type: "input",
         message: "Existing bucket name",
         when: (ctx: { createBucket: boolean }) => !ctx.createBucket,
@@ -38,18 +38,18 @@ export class S3BucketPreparer implements PluginPreparer<SetupInquireResult, Plug
   prepare(config: PluginCreateOptions<SetupInquireResult>) {
     this._logger = config.logger;
     const id = uuid();
-    const bucketName = path.join(config.options.bucketName as string, `${BUCKET_PREFIX}-${id}`);
+    const directoryPath = path.join(config.options.directoryPath as string, `${BUCKET_PREFIX}-${id}`);
     if (config.noEmit) {
-      this._logger.info(`Skip to create directory ${bucketName} because noEmit option.`);
-      return Promise.resolve({ bucketName });
+      this._logger.info(`Skip to create directory ${directoryPath} because noEmit option.`);
+      return Promise.resolve({ directoryPath });
     }
-    this._logger.info(`Create new directory: ${this._logger.colors.magenta(bucketName)}`);
+    this._logger.info(`Create new directory: ${this._logger.colors.magenta(directoryPath)}`);
     const spinner = this._logger.getSpinner(`creating bucket...`);
     spinner.start();
-    return this._createDirectory(bucketName)
-      .then(bucketName => {
+    return this._createDirectory(directoryPath)
+      .then(directoryPath => {
         spinner.stop();
-        return { bucketName };
+        return { directoryPath };
       })
     ;
   }

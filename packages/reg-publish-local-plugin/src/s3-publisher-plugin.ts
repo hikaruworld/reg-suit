@@ -11,7 +11,7 @@ import { PublisherPlugin,
 } from "reg-suit-interface";
 
 export interface PluginConfig {
-  bucketName: string;
+  directoryPath: string;
   pattern?: string;
 }
 
@@ -85,7 +85,7 @@ export class S3PublisherPlugin implements PublisherPlugin<PluginConfig> {
   fetch(key: string): Promise<any> {
     if (this._noEmit) return Promise.resolve();
     const actualPrefix = `${key}/${path.basename(this._options.workingDirs.actualDir)}`;
-    const actualPath = path.join(this._pluginConfig.bucketName, actualPrefix);
+    const actualPath = path.join(this._pluginConfig.directoryPath, actualPrefix);
     fs.mkdirsSync(actualPath);
     const progress = this._logger.getProgressBar();
     return new Promise<string[]>((resolve, reject) => {
@@ -125,7 +125,7 @@ export class S3PublisherPlugin implements PublisherPlugin<PluginConfig> {
         if (list.length) {
           progress.start(list.length, 0);
           if (!this._noEmit) {
-            this._logger.info(`Upload ${list.length} files to ${this._logger.colors.magenta(this._pluginConfig.bucketName)}.`);
+            this._logger.info(`Upload ${list.length} files to ${this._logger.colors.magenta(this._pluginConfig.directoryPath)}.`);
           } else {
             this._logger.info(`There are ${list.length} files to publish`);
           }
@@ -147,7 +147,7 @@ export class S3PublisherPlugin implements PublisherPlugin<PluginConfig> {
       })
       .then(items => {
         const indexFile = items.find(item => item.path.endsWith("index.html"));
-        const reportUrl = indexFile && path.join(this._pluginConfig.bucketName, key, indexFile.path);
+        const reportUrl = indexFile && path.join(this._pluginConfig.directoryPath, key, indexFile.path);
         return { reportUrl, items };
       })
       .then(result => {
@@ -159,7 +159,7 @@ export class S3PublisherPlugin implements PublisherPlugin<PluginConfig> {
 
   _publishItem(key: string, item: FileItem): Promise<FileItem> {
     const actualPrefix = `${key}/${path.basename(this._options.workingDirs.actualDir)}`;
-    const actualPath = path.join(this._pluginConfig.bucketName, actualPrefix);
+    const actualPath = path.join(this._pluginConfig.directoryPath, actualPrefix);
     fs.mkdirsSync(actualPath);
     return new Promise((resolve, reject) => {
       fs.readFile(item.absPath, (err, content) => {
